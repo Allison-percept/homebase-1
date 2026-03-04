@@ -33,6 +33,7 @@ public class HomeBaseDriver : MonoBehaviour
     public GameObject Dialog;
 
     private const int NSPHERES = 3600;                     // number of spheres (12,000)
+    private const float FLICKER_PROB = 0.001f;             // flicker probability (0.0001 originally)
 
     TopLevelMenu topLevelMenu;
     private bool _doingMenu = true;
@@ -120,7 +121,7 @@ public class HomeBaseDriver : MonoBehaviour
     void Update()
     {
 
-        _sf.FLickerDisplay(0.0001f);
+        _sf.FLickerDisplay(FLICKER_PROB);
 
         if(_doingMenu) {
             DealWithMenu();

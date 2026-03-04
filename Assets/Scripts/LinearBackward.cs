@@ -70,7 +70,7 @@ public class LinearBackward : MonoBehaviour
     private GameObject _target;
     private InputHandler _inputHandler;
     private ExperimentState _experimentState = ExperimentState.Initialize;    // current state of the experiment
-    private ResponseLog _responseLog = new ResponseLog();   // the response log
+    private ResponseLog _responseLog;                       // the response log
     private HeadTrackerLog _trackerLog;
 
     private int _cond;                                      // current condition number (starts from 0)
@@ -93,6 +93,7 @@ public class LinearBackward : MonoBehaviour
 
     public void Start()
     {
+        _responseLog = new ResponseLog();
         HomeBaseDriver driver = GetComponent<HomeBaseDriver>();
         _dialog = driver.Dialog;
         _d = _dialog.GetComponent<Dialog>();
@@ -117,13 +118,17 @@ public class LinearBackward : MonoBehaviour
         _linear_conditions[2] = l3;
         _linear_conditions[3] = l4;
 
+        float[] z = new float[3];
         for(int i = 0; i < NLINEAR*10; i++)
         {
             int index1 = UnityEngine.Random.Range(0, NLINEAR);
             int index2 = UnityEngine.Random.Range(0, NLINEAR);
-            float[] z = _linear_conditions[index1];
-            _linear_conditions[index1] = _linear_conditions[index2];
-            _linear_conditions[index2] = z;
+            for(int j=0;j<3;j++) 
+                z[j] = _linear_conditions[index1][j];
+            for(int j=0;j<3;j++) 
+                _linear_conditions[index1][j] = _linear_conditions[index2][j];
+            for(int j=0;j<3;j++)
+                _linear_conditions[index2][j] = z[j];
         }
     }
 
@@ -266,7 +271,7 @@ public class LinearBackward : MonoBehaviour
                     }
                     _AstateOld = true;
                     _BstateOld = false;
-                    _targetDistance = Mathf.Min(_targetDistance - _motionStep, TARGET_MAX);
+                    _targetDistance = Mathf.Max(_targetDistance - _motionStep, TARGET_MIN);
                 }
                 else if(_inputHandler.Bstate) 
                 {
@@ -279,7 +284,7 @@ public class LinearBackward : MonoBehaviour
                     }
                     _AstateOld = false;
                     _BstateOld = true;
-                    _targetDistance = Mathf.Max(_targetDistance + _motionStep, TARGET_MIN);
+                    _targetDistance = Mathf.Min(_targetDistance + _motionStep, TARGET_MAX);
                 } 
                 else
                 {

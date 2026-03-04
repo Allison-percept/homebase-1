@@ -18,17 +18,26 @@ using UnityEngine;
 public class ResponseLog
 {
 
+    private GameObject _reticle, _camera_holder;
+
     private List<string> _log;
 
 
     public ResponseLog()
     {
         _log = new List<string>();
+        _camera_holder = GameObject.Find("Camera Holder");
+        HomeBaseDriver driver = _camera_holder.GetComponent<HomeBaseDriver>();
+        _reticle = driver.AdjustableTarget;
     }
 
 
     public void Add(string s)
     {
+        s = s + $", {_camera_holder.transform.position.x}, {_camera_holder.transform.position.y}, {_camera_holder.transform.position.z}, " +
+                    $"{_camera_holder.transform.rotation.x}, {_camera_holder.transform.rotation.y}, {_camera_holder.transform.rotation.z}, {_camera_holder.transform.rotation.w}, " +
+                    $"{_reticle.transform.position.x}, {_reticle.transform.position.y}, {_reticle.transform.position.z}, " +
+                    $"{_reticle.transform.rotation.x}, {_reticle.transform.rotation.y}, {_reticle.transform.rotation.z}, {_reticle.transform.rotation.w}";
         _log.Add(s);
     }
 

@@ -351,7 +351,7 @@ MonoBehaviour:
   AdjustableTarget: {fileID: 112662781}
   FixedTarget: {fileID: 1196707099}
   CameraHolder: {fileID: 234017183}
-  HomeBase: {fileID: 0}
+  HomeBase: {fileID: 1964602097}
   Dialog: {fileID: 1194612033}
 --- !u!114 &234017188
 MonoBehaviour:

@@ -66,7 +66,7 @@ public class RotationControl : MonoBehaviour
     private GameObject _target;
     private InputHandler _inputHandler;
     private ExperimentState _experimentState = ExperimentState.Initialize;    // current state of the experiment
-    private ResponseLog _responseLog = new ResponseLog();   // the response log
+    private ResponseLog _responseLog;   // the response log
     private HeadTrackerLog _trackerLog;
 
     private int _cond;                                      // current condition number (starts from 0)
@@ -83,6 +83,7 @@ public class RotationControl : MonoBehaviour
     float[][] _rotation_conditions = new float[NROTATION][];   // the conditions
     void Start()
     {
+        _responseLog = new ResponseLog();
         HomeBaseDriver driver = GetComponent<HomeBaseDriver>();
         _dialog = driver.Dialog;
         _d = _dialog.GetComponent<Dialog>();
@@ -122,13 +123,18 @@ public class RotationControl : MonoBehaviour
         _rotation_conditions[9] = r10;
         _rotation_conditions[10] = r11;
         _rotation_conditions[11] = r12;
+        
+        float[] z = new float[3];
         for(int i = 0; i < NROTATION*10; i++)
         {
             int index1 = UnityEngine.Random.Range(0, NROTATION);
             int index2 = UnityEngine.Random.Range(0, NROTATION);
-            float[] z = _rotation_conditions[index1];
-            _rotation_conditions[index1] = _rotation_conditions[index2];
-            _rotation_conditions[index2] = z;
+            for(int j=0;j<3;j++) 
+                z[j] = _rotation_conditions[index1][j];
+            for(int j=0;j<3;j++) 
+                _rotation_conditions[index1][j] = _rotation_conditions[index2][j];
+            for(int j=0;j<3;j++)
+                _rotation_conditions[index2][j] = z[j];
         }
     }
 

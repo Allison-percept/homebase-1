@@ -80,7 +80,7 @@ public class TriangleCompletion : MonoBehaviour
 
     private InputHandler _inputHandler;
     private ExperimentState _experimentState = ExperimentState.Initialize;    // current state of the experiment
-    private ResponseLog _responseLog = new ResponseLog();   // the response log
+    private ResponseLog _responseLog;                       // the response log
     private HeadTrackerLog _trackerLog;
 
     private int _cond;                                      // current condition number (starts from 0)
@@ -105,6 +105,7 @@ public class TriangleCompletion : MonoBehaviour
 
     void Start()
     {
+        _responseLog = new ResponseLog();
         HomeBaseDriver driver = GetComponent<HomeBaseDriver>();
         _dialog = driver.Dialog;
         _d = _dialog.GetComponent<Dialog>();
@@ -161,13 +162,17 @@ public class TriangleCompletion : MonoBehaviour
         _triangle_conditions[18] = c19; _triangle_conditions[19] = c20; _triangle_conditions[20] = c21;
         _triangle_conditions[21] = c22; _triangle_conditions[22] = c23; _triangle_conditions[23] = c24;
 
-        for(int i = 0; i < 10*NTRIANG; i++)
+        float[] z = new float[5];
+        for(int i = 0; i < NTRIANG*10; i++)
         {
             int index1 = UnityEngine.Random.Range(0, NTRIANG);
             int index2 = UnityEngine.Random.Range(0, NTRIANG);
-            float[] z = _triangle_conditions[index1];
-            _triangle_conditions[index1] = _triangle_conditions[index2];
-            _triangle_conditions[index2] = z;
+            for(int j=0;j<5;j++) 
+                z[j] = _triangle_conditions[index1][j];
+            for(int j=0;j<5;j++) 
+                _triangle_conditions[index1][j] = _triangle_conditions[index2][j];
+            for(int j=0;j<5;j++)
+                _triangle_conditions[index2][j] = z[j];
         }
 
     }
