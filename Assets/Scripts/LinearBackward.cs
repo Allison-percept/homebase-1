@@ -5,9 +5,17 @@ using UnityEditor;
  * Do the formward linear motion task. Much of this code was lifted from the 
  * first version.
  *
- * At the meeting of the 17th we decided on the following
+ * At the meeting of 9th of March (ony things that impact this component)
+ *  - components are run in sequence
+ *  - insert two practice trials
+ *  - more complete headers in the output file
+ *  - updated reticle
+ *  - updated instruction cards
  *
- * lliner motion backup
+ *
+ * At the meeting of Feb the 17th we decided on the following
+ *
+ * linear motion backup
  *  - start with target in front of you by 5cm
  *  - press to start
  *  - moved 8m dist at 1.4m/s 
@@ -21,7 +29,10 @@ using UnityEditor;
  *  - click when happy
  *
  *
+ *
  * Version History
+ *      V3.0 - updates based on the March 9th meeting
+ *      V2.0 - updates based on Februady 17th meeting   
  *      V1.0 - With lots of code stolen in the refactoring process
  *
  * Michael Jenkin, 2026
@@ -49,6 +60,7 @@ public class LinearBackward : MonoBehaviour
     };
 
     private const int NLINEAR = 4;                         // number of linear conditions
+    private const int NPRACTICE = 2;                        // Number of practice conditions
     private const float WAIT_TIME = 0.2f;                   // Wait time in sec
     private const float ROTATE_VEL = 30.0f;                 // rotational velocity in deg/sec
     private const float ROTATION = 180.0f;                  // how much to turn by
@@ -81,7 +93,7 @@ public class LinearBackward : MonoBehaviour
     private float _targetDistance;                          // current target distance 
     private float _targetDistanceInit;                      // initial target distance
 
-    float[][] _linear_conditions = new float[NLINEAR][];   // the conditions
+    float[][] _linear_conditions = new float[NLINEAR+NPRACTICE][];   // the conditions
 
     private float _waitStart, _waitStart2, _waitStart3, _backwardTime, _turnStart, _motionStart;
     private float _motionStep = MIN_MOTION_STEP;            // how big a step to make for a keypress (m)
@@ -106,6 +118,13 @@ public class LinearBackward : MonoBehaviour
         ConstructConditions();
     }
 
+    public void Restart()
+    {
+        ConstructConditions();
+        _experimentState = ExperimentState.Initialize;
+        _responseLog = new ResponseLog();
+    }
+
     private void ConstructConditions()
     {
 
@@ -113,10 +132,19 @@ public class LinearBackward : MonoBehaviour
         float[] l2 = new float[3] {TARGET_DISTANCE, 1.0f, -1.0f};  // dist, pan/tilt, direction sign
         float[] l3 = new float[3] {TARGET_DISTANCE, -1.0f, 1.0f};  // dist, pan/tilt, direction sign 
         float[] l4 = new float[3] {TARGET_DISTANCE, -1.0f, -1.0f}; // dist, pan/tilt, direciont sign
-        _linear_conditions[0] = l1;
-        _linear_conditions[1] = l2;
-        _linear_conditions[2] = l3;
-        _linear_conditions[3] = l4;
+        float[] p1 = new float[3] {TARGET_DISTANCE, -1.0f, 1.0f};   // dist, pan/tilt, direction sign
+        float[] p2 = new float[3] {TARGET_DISTANCE, 1.0f, 1.0f};  // dist, pan/tilt, direction sign
+
+        for(int i=0;i<(NLINEAR+NPRACTICE);i++) 
+            _linear_conditions[i] = new float[3];
+
+        for(int i=0; i<3; i++)
+        {
+            _linear_conditions[0][i] = l1[i];
+            _linear_conditions[1][i] = l2[i];
+            _linear_conditions[2][i] = l3[i];
+            _linear_conditions[3][i] = l4[i];
+        }
 
         float[] z = new float[3];
         for(int i = 0; i < NLINEAR*10; i++)
@@ -130,19 +158,35 @@ public class LinearBackward : MonoBehaviour
             for(int j=0;j<3;j++)
                 _linear_conditions[index2][j] = z[j];
         }
+
+        // slide the real conditions back and insert the practice conditions
+
+        for(int i=(NLINEAR-1); i >= 0; i--)
+        {
+            for(int j=0;j<3;j++)
+                _linear_conditions[i+NPRACTICE][j] = _linear_conditions[i][j];
+        }
+
+        for(int i=0; i<3; i++)
+        {
+            _linear_conditions[0][i] = p1[i];
+            _linear_conditions[1][i] = p2[i];
+        }
+
     }
 
+    /* This gets called during update. Return true when done */
 
-    public void DoAdjustLinearTargetBackward(long startTime, SphereField sf)
+    public bool DoAdjustLinearTargetBackward(long startTime, SphereField sf)
     {
         float angle, dist, pan, tilt;
 
-        Debug.Log("DoAdjustLienarTarget " + _experimentState);
+        Debug.Log("DoAdjustLienarTarget " + _experimentState + "condition " + _cond);
         switch (_experimentState)
         {
             case ExperimentState.Initialize:
                 _d.SetBackground(instructionMaterial); 
-                _d.SetDialogElements("Backward Linear Motion", new string[] { "" });
+                _d.SetDialogElements("", new string[] { "" });
                 _d.SetDialogInstructions("Press trigger to start");
                 _experimentState = ExperimentState.Setup;
                 _dialog.SetActive(true);
@@ -156,8 +200,9 @@ public class LinearBackward : MonoBehaviour
                 }
                 break;
             case ExperimentState.BeforeMotion: // waiting before condition
-                if (_cond < NLINEAR)
+                if (_cond < (NLINEAR+NPRACTICE))
                 {
+                    Debug.Log($"cond {_cond} getting parameters");
                     _distance = _linear_conditions[_cond][0];
                     _pitch = _linear_conditions[_cond][1] > 0;
                     _turnRight = _linear_conditions[_cond][2] > 0;
@@ -184,7 +229,7 @@ public class LinearBackward : MonoBehaviour
                     _experimentState = ExperimentState.WaitForBackwardTarget;
                     _camera.transform.position = new Vector3(0.0f, 0.0f, 0.0f);
                     _camera.transform.rotation = Quaternion.Euler(0.0f, 0.0f, 0.0f);
-                    _d.SetDialogElements("Backward Linear Motion", new string[] { "Condition " + (1+_cond) + "/" + NLINEAR });
+                    _d.SetDialogElements("Backward Linear Motion", new string[] { "Condition " + (1+_cond) + "/" + (NLINEAR+NPRACTICE) });
                     _d.SetDialogInstructions("Press trigger to start");
                     _dialog.SetActive(true);
                     _trackerLog.StartRecording();
@@ -305,32 +350,30 @@ public class LinearBackward : MonoBehaviour
                     _camera.transform.rotation = Quaternion.Euler(0.0f, 0.0f, 0.0f);
                     _reticle.SetActive(false);
 
-                    if(_cond < NLINEAR - 1)
+                    if(_cond < (NLINEAR + NPRACTICE - 1))
                     {
                         _cond = _cond + 1;
                         _experimentState = ExperimentState.BeforeMotion;
+                        Debug.Log($"going back for next condition {_cond}");
                     } else {
-                        _responseLog.Dump(Application.persistentDataPath + "/Responses_linear_backward_" + startTime + ".txt", "cond, starttime, motion, rotation, pitch, spindir, inittarget, finaltarget");
+                        _responseLog.Dump(Application.persistentDataPath + "/Responses_linear_backward_" + startTime + ".txt",
+                            "cond, starttime, targetd,  pitch, spinDir, inittarget, finaltarget, cam pos x, cam pos y, cam pos z, cam rot x, cam rot y, cam rot z, cam rot w, reticle pos x, reticle pos y, reticle pos z, reticle rot x, reticle rot y, reticle rot z, reticle rot w");
                         Debug.Log($"Output is in {Application.persistentDataPath}");
                         _d.SetDialogElements("Completed", new string[] { "" });
-                        _d.SetDialogInstructions("Press trigger to quit");
+                        _d.SetDialogInstructions("Press trigger to continue");
                         _dialog.SetActive(true);
                         _experimentState = ExperimentState.Done;
                     }
-
                 }
                 break;
             case ExperimentState.Done:
-                if (_inputHandler.TriggerPressed)
-                {
-#if UNITY_EDITOR
-                    EditorApplication.isPlaying = false;
-#else
-                    Application.Quit();
-#endif
+                if (_inputHandler.TriggerPressed) {
+                    _dialog.SetActive(false);
+                    return(true);
                 }
                 break;
         }
+        return(false);
             
     }
 }
